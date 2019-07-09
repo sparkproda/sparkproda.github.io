@@ -4,7 +4,7 @@ title:  "kubernetes helm chart로 nginx 구성하기"
 date:   2019-07-09
 categories: kubernetes
 ---
-# kubernetes helm chart로 nginx 구성하기
+
 
 ### 1. Configmap 작성
 
