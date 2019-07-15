@@ -2,7 +2,7 @@
 layout: post
 title:  "kubernetes container time zone 변경  구성하기"
 date:   2019-07-15
-categories: kubernetes, container, time
+categories: kubernetes container timezone 컨테이너 타임존
 ---
 
 
