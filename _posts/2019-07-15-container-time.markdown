@@ -6,7 +6,7 @@ categories: kubernetes container timezone 컨테이너 타임존
 ---
 
 
-
+컨테이너의 시간을 변경하기 위해서는 hostpath로 volume mount해서 변경 할 수 있습니다.
 ### 1. timezone 변경
 
 
