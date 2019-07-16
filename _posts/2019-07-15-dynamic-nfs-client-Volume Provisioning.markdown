@@ -5,9 +5,10 @@ date:   2019-07-15
 categories: nfs volume nfsclient helm kubernetes
 ---
 
-# NFS Dynamic Volume Provisioning
 
 NFS client를 구성할 때 helm를 통해서 설치 하거나, 별도 provision을 통해서 설치를 할수 있습니다. 여기에서는 helm를 이용한 구성방안을 알려 드립니다.
+
+# NFS Dynamic Volume Provisioning
 
 ## 선행 사항
 * nfs server
@@ -15,6 +16,7 @@ NFS client를 구성할 때 helm를 통해서 설치 하거나, 별도 provision
 * nfs package install on host
 
 ![%EA%B7%B8%EB%A6%BC1.png?type=w2](https://blogfiles.pstatic.net/MjAxODA5MTZfMjAz/MDAxNTM3MDczODcxODE1.91LWpZNeX46GzbjaawLGJzy3Jt50tACXg0FZmKjV6lkg.bnkBBPuBcc_myJbP7_aHFKsoFChX6Q3EpfuVkQoP4tgg.PNG.alice_k106/%EA%B7%B8%EB%A6%BC1.png?type=w2)
+[참조 사이트] https://blog.naver.com/alice_k106/221360005336
 
 
 
