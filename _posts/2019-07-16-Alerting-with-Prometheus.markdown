@@ -12,4 +12,4 @@ Prometheus에서는 alert manager를 사용하여 alert을 slack, mail 등 다�
 
 [IBM Cloud Private — Alerting with Prometheus - niklaushirt - Medium](https://medium.com/@niklaushirt/ibm-cloud-private-alerting-with-prometheus-bc01e2f9b518)
 
-![0*exGq3uvecILhsMYE.png](https://miro.medium.com/max/700/0*exGq3uvecILhsMYE.png)
+![alert](https://miro.medium.com/max/700/0*exGq3uvecILhsMYE.png)
