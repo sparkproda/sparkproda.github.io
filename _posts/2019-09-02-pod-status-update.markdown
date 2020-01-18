@@ -4,7 +4,6 @@ title:  "pod status updated "
 date:   2019-09-02
 categories: kubernetes pod update time
 ---
-# Kubernetes node 상태 업데이트 단축방안
 
 Pod 정보 업데이트 시간을 단축 하기 위한 옵션 설정값이 kubernetes 1.13에서 아래 부분으로 변경되었습니다.
 
@@ -13,6 +12,7 @@ Pod 정보 업데이트 시간을 단축 하기 위한 옵션 설정값이 kuber
 - default-not-ready-toleration-seconds
 - default-unreachable-toleration-seconds
 
+# Kubernetes node 상태 업데이트 단축방안
 
 ~~~
 services:
