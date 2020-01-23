@@ -1,13 +1,12 @@
 ---
 layout: post
-title:  "pod status updated "
+title:  "Pod status updated "
 date:   2019-09-02
 categories: kubernetes pod update time
 ---
+Pod 정보 업데이트 시간을 단축 하기 위한 옵션 설정값d을 아래와 같이 변경합니다.
+
 # Kubernetes node 상태 업데이트 단축방안
-
-Pod 정보 업데이트 시간을 단축 하기 위한 옵션 설정값이 kubernetes 1.13에서 아래 부분으로 변경되었습니다.
-
 기존 pod-eviction-timeout 옵션에서 아래 부분으로 변경되었습니다.
 
 - default-not-ready-toleration-seconds
