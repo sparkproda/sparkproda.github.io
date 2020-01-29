@@ -1,0 +1,111 @@
+---
+layout: post
+title:  "CA 인증서 만들기"
+date:   2020-01-29
+categories: CA private key 인증서 certificates CSR ssh-key Docker registry
+---
+rootCA 인증서를 만들어서 Self-signed 인증서를 만들도록 하겠습니다. 인증서는 https 통신을 하기 위해서 필요하며, 대표적으로 docker registry 및 helm 를 구성 시에도 사용됩니다.
+
+# 01. CA Private key 생성
+
+Private key를 생성합니다. ca-key.pem 파일이 생성됩니다ㅣ.
+
+~~~
+
+openssl genrsa -out ca-key.pem 2048
+
+~~~
+
+# 02. CA 인증서 생성
+
+샘플로 10년짜리 CA 인증서를 생성합니다. ca-crt.pem  파일이 생성됩니다.
+
+~~~
+
+openssl req -x509 -new -nodes -key ca-key.pem -days 3650 \
+-out ca-crt.pem -subj '/C=US/ST=New York/L=New York/O=domain.com/CN=coreos.domain.com'
+
+~~~
+
+# 03. 사용자 Private key 생성
+
+사용자 Private key를 생성합니다. 사용자 Private key파일인 coreos-key.pem 파일이 생성됩니다.
+
+~~~
+
+# Generate the server/client private key.
+
+openssl genrsa -out coreos-key.pem 2048
+
+~~~
+
+
+# 04. 사용자 인증서 생성을 위한 CSR 작성
+
+사용ㅈ Private key파일을 사용하여 사용자 인증서 생성을 위한 CSR를 작성합니다.
+
+~~~
+openssl req -new -key coreos-key.pem \
+-newkey rsa:2048 -nodes \
+-subj '/' \
+-outform pem -out coreos-req.csr
+~~~
+
+
+# 04. 인증서 생성
+
+rootCA 및 root key를 사용하여 인증서를 생성합니다. 여기에서는 10년짜리 사용자 인증서를 생성 합니다. 사용자 인증서인 coreos-cert.pem 파일이 생성됩니다.
+
+~~~
+# Sign the server/client certificate request.
+
+openssl x509 -req -in coreos-req.csr -CA ca-crt.pem -CAkey ca-key.pem -CAcreateserial \
+-out coreos-cert.pem -days 3650 -extensions v3_req
+
+~~~
+
+
+
+# 05. 인증서 정보 확인하기
+
+사용자 인증서가 생성완료되었습니다.
+
+~~~
+# Cert info
+openssl x509 -in coreos-cert.pem -noout -text
+
+~~~
+
+# 06. 인증서를 trust 인증서에 등록
+
+rootCA가 Self signed CA 이기 때문에 Trust 인증서에 등록해야 합니다. OS마다 등록 과정이 상이하니 참조 바랍니다.
+
+docker에서 이 인증서를 Trust 하기 위해서는 docker 재시작이 필요합니다.
+
+~~~
+#01. Linux (Ubuntu, Debian)
+
+## Copy your CA to dir /usr/local/share/ca-certificates/
+
+sudo cp foo.crt /usr/local/share/ca-certificates/foo.crt
+
+## Update the CA store:
+
+sudo update-ca-certificates
+
+#02. Linux (CentOS 6)
+
+## Install the ca-certificates package:
+
+yum install ca-certificates
+
+## Enable the dynamic CA configuration feature:
+
+update-ca-trust force-enable
+
+## Add it as a new file to /etc/pki/ca-trust/source/anchors/:
+
+cp foo.crt /etc/pki/ca-trust/source/anchors/
+
+update-ca-trust extract
+~~~
