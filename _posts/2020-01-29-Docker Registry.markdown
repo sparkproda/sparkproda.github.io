@@ -13,7 +13,7 @@ categories: Docker local registry docker login https local registry htpasswd
 사용자명을 ose4로 생성합니다.
 
 ~~~
-htpasswd -Bc htpasswd ose4
+$ htpasswd -Bc htpasswd ose4
 
 # 파일 내용을 보면 아래와 같습니다.
 
@@ -23,7 +23,8 @@ ose4:$apr1$h1Tl.Fu*****u$pFWzOZCYV0b13L1
 # 02. docker 이미지를 저장할 디렉토리를 생성합니다.
 
 ~~~
-mkdir -p /data
+
+$ mkdir -p /data
 
 ~~~
 
@@ -32,7 +33,7 @@ mkdir -p /data
 인증서 경로, 패스워드 경로, 사용할 포트를 잘 확인하셔서 구성하시면 됩니다.
 
 ~~~
-    docker run --restart=always --name mirror-registry -p 5001:5000 -v /data:/data -v /auth:/auth  -e "REGISTRY_AUTH=htpasswd"  -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm"  -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd  -e REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/data -v /etc/pki/tls/private/:/certs -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/docker-cert.pem  -e REGISTRY_HTTP_TLS_KEY=/certs/docker-key.pem -d docker.io/library/registry:2
+$ sudo docker run --restart=always --name mirror-registry -p 5001:5000 -v /data:/data -v /auth:/auth  -e "REGISTRY_AUTH=htpasswd"  -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm"  -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd  -e REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/data -v /etc/pki/tls/private/:/certs -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/docker-cert.pem  -e REGISTRY_HTTP_TLS_KEY=/certs/docker-key.pem -d docker.io/library/registry:2
 
 ~~~
 
