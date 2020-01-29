@@ -64,8 +64,6 @@ openssl x509 -req -in coreos-req.csr -CA ca-crt.pem -CAkey ca-key.pem -CAcreates
 
 ~~~
 
-
-
 # 05. 인증서 정보 확인하기
 
 사용자 인증서가 생성완료되었습니다.
