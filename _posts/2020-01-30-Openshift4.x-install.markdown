@@ -1,0 +1,207 @@
+---
+layout: post
+title:  "오픈쉬프트(openshift) 4.x 설치(install)"
+date:   2020-01-29
+categories: openshift 4.2 install container platform mirror redhat podman
+---
+
+ Closed(페쇠망) 네트워크상에서 오픈쉬프트를 설치 하기 위해서는 외부와 통신이 되는 bastion 서버가 있어야 합니다.
+이 bastion 서버에서는 설치에 필요한 docker image를 저장하기 위해서 docker registry를 구성합니다.
+
+그리고, 설치/운영 및 업그레이드 진행을 위해서 추가적인 기능(DNS, Web server, DHCP, loadbalancer)이 제공되어야 하며,
+없을 경우에는 추가 구성을 해야 합니다.
+
+# 1. docker private mirror registry 구성
+
+도커 미러 레지스트리를 구성하기 위해서는 도커 혹은 podman이 설치 되어 있어야 합니다. 설치방법은 여기에서는
+skip 합니다.
+도커 레지스트리와 관련된 디렉토리를 생성합니다.
+
+
+### 1) 설치 디텍토리 생성
+~~~
+
+# mkdir -p /opt/registry/{auth,certs,data}
+
+~~~
+
+### 2) 도커 레지스트리 인증서 생성 및 패스워드 생성
+
+도커 레지스트리 인증서를 적용하기 위해서는 인증서 생성도 해야 하며, 또한 CA 인증서를 trust CA에 업데이트 해야 합니다.
+
+~~~
+
+# cd /opt/registry/certs
+
+# openssl req -newkey rsa:4096 -nodes -sha256 -keyout domain.key -x509 -days 365 -out domain.crt
+
+# yum install -y  httpd-tools
+
+# htpasswd -bBc /opt/registry/auth/htpasswd sparkproda sp*****oda
+
+[root@ose4-bastion certs]# cat /opt/registry/auth/htpasswd
+sparkproda:$2y$05$ZZKvkzRPqPIV3CyCF*****IVO6N.HoxdabHWwAcCyCOadfJMK4kmm
+
+
+# cp /opt/registry/certs/domain.crt /etc/pki/ca-trust/source/anchors/
+# update-ca-trust
+
+
+
+~~~
+
+
+### 3) 도커 이미지를 통해서 docker private registry 구성
+
+아래에서는 docker or podman을 사용하여 docker private registry를 구성하는 방법입니다.
+
+~~~
+
+$ sudo docker run --restart=always --name mirror-registry -p 5000:5000 \
+    -v /opt/registry/data:/var/lib/registry \
+    -v /opt/registry/auth:/auth  \
+    -e "REGISTRY_AUTH=htpasswd"  \
+    -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm"  \
+    -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+    -e REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry \
+    -v /opt/registry/certs:/certs \
+    -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt \
+    -e REGISTRY_HTTP_TLS_KEY=/certs/domain.key \
+    -d docker.io/library/registry:2
+
+
+# podman run --name mirror-registry -p 5000:5000 \
+     -v /opt/registry/data:/var/lib/registry:z \
+     -v /opt/registry/auth:/auth:z \
+     -e "REGISTRY_AUTH=htpasswd" \
+     -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+     -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+     -v /opt/registry/certs:/certs:z \
+     -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt \
+     -e REGISTRY_HTTP_TLS_KEY=/certs/domain.key \
+     -d docker.io/library/registry:2
+
+~~~
+
+docker run 상태 확인하시고 접속 테스트를 진행 해 봅니다.
+
+~~~
+
+# curl -u sparkproda:sparkproda  -k https://ose4-bastion:5000/v2/_catalog
+
+[root@ose4-bastion certs]# curl -u sparkproda:sparkproda  -k https://ose4-bastion:5000/v2/_catalog
+{"repositories":[]}
+
+~~~
+
+### 4) docker login에 필요한 파일 준비
+
+아래와 같이 로그인을 진행하면 docker login에 대한 secret이 저장됩니다. 이 파일은
+도커 미러 이미지 레파지토리를 구성할 때 사용됩니다. 이 auth 값은 base64 encode된 값입니다. 아래 참조 바랍니다.
+
+
+~~~
+[root@ose4-bastion certs]# docker login ose4-bastion:5000
+Username: sparkproda
+Password:
+Login Succeeded
+[root@ose4-bastion certs]# ls -al ~/.docker/config.json
+-rw-------. 1 root root 89 Jan 30 04:44 /root/.docker/config.json
+[root@ose4-bastion certs]# cat ~/.docker/config.json
+{
+	"auths": {
+		"ose4-bastion:5000": {
+			"auth": "c3Bhcmtwcm9kYTpzcGFya3Byb2Rh"
+		}
+	}
+}[root@ose4-bastion certs]#
+
+[root@ose4-bastion certs]# echo -n 'sparkproda:sparkproda' | base64 -w0
+c3Bhcmtwcm9kYTpzcGFya3Byb2Rh
+
+[root@ose4-bastion certs]# cp ~/.docker/config.json ~/pullsecret_config.json
+
+
+~~~
+
+### 5) json 파일 처리
+
+json 파일 처리를 위한 라이브러리를 설치합니다.
+
+~~~
+
+# yum install -y jq
+
+~~~
+
+### 6) secret 파일 다운로드 후 docker login auth파일 추가
+
+https://cloud.redhat.com/openshift/install/metal/user-provisioned 사이트에서
+
+pull secret를 다운로드 받습니다. 그리고 아래와 같이 docker login auth 파일을 추가합니다.
+
+~~~
+
+# ls pull*
+pull-secret.txt  pullsecret_config.json
+
+# jq -s '.[0] * .[1]'  pullsecret_config.json pull-secret.txt > new-pull-secret.txt
+
+[root@ose4-bastion ~]# cat new-pull-secret.txt
+{
+  "auths": {
+    "ose4-bastion:5000": {
+      "auth": "c3Bhcmtwcm9kYTpzcGFya3Byb2Rh"
+    },
+    "cloud.openshift.com": {
+      "auth": "b3BlbnNoaW~~~~~~~
+
+
+~~~
+
+### 7) oc, kubectl 설치
+
+여기 사이트에서 설치 관련 리소스를 다운로드 받습니다.
+https://access.redhat.com/downloads/content/290/
+
+
+
+
+### 8) Mirror docker repository 구성
+
+~~~
+$ export OCP_RELEASE=<release_version>
+$ export LOCAL_REGISTRY='<local_registry_host_name>:<local_registry_host_port>'
+$ export LOCAL_REPOSITORY='<repository_name>'
+$ export PRODUCT_REPO='openshift-release-dev'
+$ export LOCAL_SECRET_JSON='<path_to_pull_secret>'
+$ export RELEASE_NAME="ocp-release"
+
+
+$ export OCP_RELEASE=4.2.14-s390x
+$ export LOCAL_REGISTRY=ose4-bastion:5000
+$ export LOCAL_REPOSITORY='sparkproda'
+$ export PRODUCT_REPO='openshift-release-dev'
+$ export LOCAL_SECRET_JSON='~/new-pull-secret.txt'
+$ export RELEASE_NAME="ocp-release"
+
+
+$ oc adm -a ${LOCAL_SECRET_JSON} release mirror \
+     --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${OCP_RELEASE} \
+     --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} \
+     --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}
+
+
+
+
+     imageContentSources:
+     - mirrors:
+       - ose4-bastion:5000/sparkproda
+       source: quay.io/openshift-release-dev/ocp-release
+     - mirrors:
+       - ose4-bastion:5000/sparkproda
+       source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+
+
+$ cat /etc/pki/ca-trust/source/anchors/domain.crt        
+~~~

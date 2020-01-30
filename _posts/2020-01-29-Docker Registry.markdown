@@ -13,7 +13,7 @@ categories: Docker local registry docker login https local registry htpasswd
 사용자명을 ose4로 생성합니다.
 
 ~~~
-$ htpasswd -Bc htpasswd ose4
+$ htpasswd -bBc htpasswd ose4
 
 # 파일 내용을 보면 아래와 같습니다.
 
