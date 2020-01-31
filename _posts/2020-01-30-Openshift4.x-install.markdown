@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "오픈쉬프트(openshift) 4.x 설치(install)"
+title:  "오픈쉬프트(openshift) 4.x 설치(install)-1단계: docker registry"
 date:   2020-01-29
 categories: openshift 4.2 install container platform mirror redhat podman
 ---
@@ -178,11 +178,11 @@ $ export LOCAL_SECRET_JSON='<path_to_pull_secret>'
 $ export RELEASE_NAME="ocp-release"
 
 
-$ export OCP_RELEASE=4.2.14-s390x
+$ export OCP_RELEASE=4.2.14-x86_64
 $ export LOCAL_REGISTRY=ose4-bastion:5000
 $ export LOCAL_REPOSITORY='sparkproda'
 $ export PRODUCT_REPO='openshift-release-dev'
-$ export LOCAL_SECRET_JSON='~/new-pull-secret.txt'
+$ export LOCAL_SECRET_JSON='/$HOME/new-pull-secret.txt'
 $ export RELEASE_NAME="ocp-release"
 
 
@@ -204,4 +204,85 @@ $ oc adm -a ${LOCAL_SECRET_JSON} release mirror \
 
 
 $ cat /etc/pki/ca-trust/source/anchors/domain.crt        
+~~~
+미러링이 완료되면 아래와 같습니다.
+
+~~~
+Success
+Update image:  ose4-bastion:5000/sparkproda:4.2.14-x86_64
+Mirror prefix: ose4-bastion:5000/sparkproda
+
+To use the new mirrored repository to install, add the following section to the install-config.yaml:
+
+imageContentSources:
+- mirrors:
+  - ose4-bastion:5000/sparkproda
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - ose4-bastion:5000/sparkproda
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+
+
+To use the new mirrored repository for upgrades, use the following to create an ImageContentSourcePolicy:
+
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: example
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - ose4-bastion:5000/sparkproda
+    source: quay.io/openshift-release-dev/ocp-release
+  - mirrors:
+    - ose4-bastion:5000/sparkproda
+    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+[root@ose4-bastion ~]#
+
+~~~
+
+위 결과 메세지에서 imageContentSource 섹션 부분은 추후 설치 시 필요한 부분이므로 기록해 두어야 합니다.
+~~~
+imageContentSources:
+- mirrors:
+  - ose4-bastion:5000/sparkproda
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - ose4-bastion:5000/sparkproda
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+~~~
+
+### 9) command line interface를 설치 합니다.
+
+openshift-install, kubectl, oc 를 설치합니다.
+
+openshift-install 파일은 아래와 같이 해서 얻을 수 있습니다.
+
+그리고 CLI 를 /usr/local/bin 으로 이동합니다.
+
+
+~~~
+oc adm release extract --command=openshift-install "${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}" -a ${LOCAL_SECRET_JSON}
+
+[root@ose4-bastion ~]# ./openshift-install version
+./openshift-install v4.2.14
+
+
+# tar zxvf openshift-client-linux-4.2.13.tar.gz
+README.md
+oc
+kubectl
+
+# mv oc /usr/local/bin/
+# mv kubectl /usr/local/bin/
+
+$ which oc
+/usr/local/bin/oc
+
+$ which kubectl
+/usr/local/bin/kubectl
+
+$ which openshift-install
+/usr/local/bin/openshift-install
+
 ~~~

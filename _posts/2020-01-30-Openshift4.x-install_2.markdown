@@ -1,0 +1,161 @@
+---
+layout: post
+title:  "오픈쉬프트(openshift) 4.x 설치(install)-2단계: UPI "
+date:   2020-01-30
+categories: openshift 4.2 install container platform mirror redhat podman virtualbox
+---
+
+UPI 방식으로 설치할 때 RHCOS VM을 먼저 구성해야 합니다. 구성하기 위해서는 여러가지 방식이 있으며, 방식에 따라서 사전 준비 해야 할 부분이 있습니다.
+
+RHCOS VM 구성시 IP 설정, Ignition 파일이 있어야 합니다. IP설정을 자동구성으로 진행하기 위해서는 DHCP 서버를 별도 구성해야 합니다. 그리고 RHCOS의 OS구성 및 설정파일(Igniton파일)을 가져가기 위해서는 PXE 구성이 필요합니다.
+ 또한 PXE를 통해 특정 이미지를로드하여 iPXE를 사용할 수 있습니다. 이렇게하려면이 이미지를 내보내려면 TFTP 서버가 필요합니다.
+
+또한 UEFI가 지원된다면 grub.conf 파일을 수정하여 구성도 가능합니다.
+
+여기에서는 간단하게 설치 하기 위한 방법으로 아래와 같이 진행하고자 합니다.
+
+구성환경은 Virtualbox로 구성합니다.
+
+ - RHCOS VM IP를 static ip 사용(DHCP 불필요)
+ - Web서버 구성(RHCOS OS downloading 및 RHCOS ignition 파일 다운로드)
+ - Install Configration 파일 작성(이것을 작성해야 RHCOS ignition파일이 생성됨)
+   여기에는 sshkey(RHCOS 로그인용도), pullSecret, docker registry 정보가 필요합니다.
+ - Virtualbox에서 ISO 파일을 업로드 해서 VM을 재부팅 후
+
+RHCOS VM 생성이 완료되면, 이제 openshift 설치를 위한 DNS, loadbalancer를 구성해야 합니다.
+
+# 1. Web 서버 구성
+
+설치 시 필요한 bios, kernel, initramfs 파일을 다운로드 후 web 서버를 통해서 다운로드 할 수 있도록 구성합니다.
+
+~~~
+
+# RHCOS_BASEURL=https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/
+
+# wget ${RHCOS_BASEURL}/4.2/latest/rhcos-4.2.0-x86_64-installer-initramfs.img
+
+# wget ${RHCOS_BASEURL}/4.2/latest/rhcos-4.2.0-x86_64-installer-kernel
+
+# wget ${RHCOS_BASEURL}/4.2/latest/rhcos-4.2.0-x86_64-metal-bios.raw.gz
+
+~~~
+
+virtualbox에서 부팅할 때 사용할 ISO 파일도 여기 사이트에서 다운로드 합니다.
+
+https://access.redhat.com/downloads/content/290/
+
+웹서버를 설치가 아닌 도커로 웹서버를 만들겠습니다.
+
+다운로드된 파일을 웹서버 디렉토리에 옮긴 후 web server docker를 실행 시킵니다.
+
+
+~~~
+
+$ mkdir -p /usr/share/nginx/ocp/rhcos/ignitions
+
+$ mkdir -p /usr/share/nginx/ocp/rhcos/images
+
+## web 서버 Container 생성
+
+$ docker run --restart=always --name openshiftweb -p 80:80  -v /usr/share/nginx/ocp/rhcos/:/usr/share/nginx/html/  nginx:latest
+
+$ cp rhcos-4.3.0-x86_64-installer.iso /usr/share/nginx/ocp/rhcos/images/
+$ cp rhcos-4.2.0-x86_64-installer-initramfs.img /usr/share/nginx/ocp/rhcos/images/
+$ cp rhcos-4.2.0-x86_64-installer-kernel /usr/share/nginx/ocp/rhcos/images/
+$ cp rhcos-4.2.0-x86_64-metal-bios.raw.gz /usr/share/nginx/ocp/rhcos/images/
+
+~~~
+
+
+# 2. 설정 파일 작성
+
+### 1) sshkey 생성
+
+~~~
+$ ssh-keygen -t rsa -b 2048 -N "" -f /root/.ssh/id_rsa
+
+$ eval "$(ssh-agent -s)"
+
+$ ssh-add /root/.ssh/id_rsa
+
+
+~~~
+
+### 2) install-config.yaml 파일 작성
+
+이 파일이 작성되어야 RHCOS ignition파일이 생성할 수 있습니다.
+
+pullSecret 에는 docker registry login 패스워드를 입력합니다.
+
+jq -c . ~/new-pull-secret.txt
+
+additionalTrustBundle 에는 docker registry 인증서를 입력합니다.
+
+cat /opt/registry/certs/domain.crt
+
+sshkey를 입력합니다.
+
+~~~
+
+$ mkdir /root/openshift4
+
+$ cat <<EOF >> /root/openshift4/install-config.yaml
+
+apiVersion: v1
+baseDomain: makecloud.me
+compute:
+- hyperthreading: Enabled   
+  name: worker
+  replicas: 0
+controlPlane:
+  hyperthreading: Enabled   
+  name: master
+  replicas: 3
+metadata:
+  name: sparkproda
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  none: {}
+pullSecret: '{"auths":{"ose4-bastion:5000":{"auth":"c3Bhcmtwcm9k***zcGFya3Byb2Rh"}}}' "you@example.com"}}}'
+sshKey: 'ssh-ed25519 AAAA...'
+additionalTrustBundle: |
+  -----BEGIN CERTIFICATE-----
+  ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+  -----END CERTIFICATE-----
+imageContentSources:
+- mirrors:
+  - ose4-bastion:5000/sparkproda
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - ose4-bastion:5000/sparkproda
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+EOF  
+~~~
+
+
+### 03) Ignition 설정 파일 생성
+
+아래 명령어를 통해서 ignition 파일이 생성됩니다. 그리고 ignition 파일을 nginx web서버 디렉토리로 copy합니다.
+
+~~~
+# openshift-install create ignition-configs --dir=/root/openshift4
+INFO Consuming "Install Config" from target directory
+WARNING Making control-plane schedulable by setting MastersSchedulable to true for Scheduler cluster settings
+
+# ls
+auth  bootstrap.ign  install-config.yaml.backup  master.ign  metadata.json  worker.ign
+
+cp *.ign /usr/share/nginx/ocp/rhcos/ignitions/
+
+~~~
+
+
+### 04) virtualbox에서 ISO 파일을 사용하여 RHCOS VM 만들기
+
+virtualbox ethernet 인터페이스는 enp0s3, enp0s8이 있습니다. dev은 sda 입니다.
