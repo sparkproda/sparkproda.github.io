@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "오픈쉬프트(openshift) 4.x 설치(install)-1단계: docker registry"
+title:  "오픈쉬프트(openshift) 4.x 설치(install)-1단계: docker registry 구성"
 date:   2020-01-29
 categories: openshift 4.2 install container platform mirror redhat podman
 ---

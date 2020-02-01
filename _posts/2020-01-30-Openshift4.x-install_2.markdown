@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "오픈쉬프트(openshift) 4.x 설치(install)-2단계: UPI "
+title:  "오픈쉬프트(openshift) 4.x 설치(install)-2단계: UPI 구성환경 준비  "
 date:   2020-01-30
-categories: openshift 4.2 install container platform mirror redhat podman virtualbox
+categories: openshift 4.2 install container platform mirror redhat podman virtualbox vagrant
 ---
 
 UPI 방식으로 설치할 때 RHCOS VM을 먼저 구성해야 합니다. 구성하기 위해서는 여러가지 방식이 있으며, 방식에 따라서 사전 준비 해야 할 부분이 있습니다.
@@ -14,15 +14,18 @@ RHCOS VM 구성시 IP 설정, Ignition 파일이 있어야 합니다. IP설정�
 
 여기에서는 간단하게 설치 하기 위한 방법으로 아래와 같이 진행하고자 합니다.
 
-구성환경은 Virtualbox로 구성합니다.
+구성환경은 Virtualbox를 사용하여 구성합니다.
+
+기본 VM 구성은 Vagrnat를 사용하여 생성합니다.
 
  - RHCOS VM IP를 static ip 사용(DHCP 불필요)
  - Web서버 구성(RHCOS OS downloading 및 RHCOS ignition 파일 다운로드)
  - Install Configration 파일 작성(이것을 작성해야 RHCOS ignition파일이 생성됨)
    여기에는 sshkey(RHCOS 로그인용도), pullSecret, docker registry 정보가 필요합니다.
+ - CoreOS Config Transpiler (filetranspiler): https://github.com/ashcrow/filetranspiler
+ - DNS, loadbalancer
  - Virtualbox에서 ISO 파일을 업로드 해서 VM을 재부팅 후
 
-RHCOS VM 생성이 완료되면, 이제 openshift 설치를 위한 DNS, loadbalancer를 구성해야 합니다.
 
 # 1. Web 서버 구성
 
@@ -33,11 +36,8 @@ RHCOS VM 생성이 완료되면, 이제 openshift 설치를 위한 DNS, loadbala
 # RHCOS_BASEURL=https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/
 
 # wget ${RHCOS_BASEURL}/4.2/latest/rhcos-4.2.0-x86_64-installer-initramfs.img
-
 # wget ${RHCOS_BASEURL}/4.2/latest/rhcos-4.2.0-x86_64-installer-kernel
-
 # wget ${RHCOS_BASEURL}/4.2/latest/rhcos-4.2.0-x86_64-metal-bios.raw.gz
-
 ~~~
 
 virtualbox에서 부팅할 때 사용할 ISO 파일도 여기 사이트에서 다운로드 합니다.
@@ -155,7 +155,26 @@ cp *.ign /usr/share/nginx/ocp/rhcos/ignitions/
 
 ~~~
 
+기본 Ignition 파일에서 RHCOS VM static IP를 사용하기 위해서는 Ignition 파일을 수정해야 합니다.
+
+
+
+
 
 ### 04) virtualbox에서 ISO 파일을 사용하여 RHCOS VM 만들기
 
 virtualbox ethernet 인터페이스는 enp0s3, enp0s8이 있습니다. dev은 sda 입니다.
+
+
+RHCOS 부팅 중에 image URL 경로 및 Iginition URL경로를 지정할 수 있습니다.
+
+~~~
+
+ip=192.168.1.116::192.168.1.1:255.255.255.0:bootstrap.openshift4.example.com:ens192:none
+nameserver=192.168.1.2
+coreos.inst.install_dev=sda
+
+
+/usr/libexec/coreos-installer -b http://{이미지경로}   -i http://{ignition 파일 경로}
+
+~~~
