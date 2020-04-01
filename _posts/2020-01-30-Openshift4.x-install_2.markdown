@@ -51,54 +51,78 @@ https://access.redhat.com/downloads/content/290/
 
 ~~~
 
-$ mkdir -p /usr/share/nginx/ocp/rhcos/ignitions
-
-$ mkdir -p /usr/share/nginx/ocp/rhcos/images
+$ mkdir -p /opt/share/nginx/ocp/rhcos/ignitions
+$ mkdir -p /opt/share/nginx/ocp/rhcos/images
+$ sudo chmod -R 0755 /webdirectory
+$ sudo chmod -R 0755 /opt/share/nginx/ocp/rhcos
 
 ## web 서버 Container 생성
 
-$ docker run --restart=always --name openshiftweb -p 80:80  -v /usr/share/nginx/ocp/rhcos/:/usr/share/nginx/html/  nginx:latest
+$ docker run --restart=always --name openshiftweb -itd -p 8888:80  -v /usr/share/nginx/ocp/rhcos/:/usr/share/nginx/html/  nginx:latest
 
-$ cp rhcos-4.3.0-x86_64-installer.iso /usr/share/nginx/ocp/rhcos/images/
-$ cp rhcos-4.2.0-x86_64-installer-initramfs.img /usr/share/nginx/ocp/rhcos/images/
-$ cp rhcos-4.2.0-x86_64-installer-kernel /usr/share/nginx/ocp/rhcos/images/
-$ cp rhcos-4.2.0-x86_64-metal-bios.raw.gz /usr/share/nginx/ocp/rhcos/images/
+The z option indicates that the bind mount content is shared among multiple containers.
+The Z option indicates that the bind mount content is private and unshared.
+
+on the host to access or else add an SELinux rule by running
+
+chcon -Rt svirt_sandbox_file_t /path/to/volume
+
+$ cp rhcos-4.3.0-x86_64-installer.iso /opt/share/nginx/ocp/rhcos/images/
+$ cp rhcos-4.2.0-x86_64-installer-initramfs.img /opt/share/nginx/ocp/rhcos/images/
+$ cp rhcos-4.2.0-x86_64-installer-kernel /opt/share/nginx/ocp/rhcos/images/
+$ cp rhcos-4.2.0-x86_64-metal-bios.raw.gz /opt/share/nginx/ocp/rhcos/images/
+
+
+https://docs.openshift.com/container-platform/3.11/install/disconnected_install.html#disconnected-repo-server
+
+## 다른 방안으로 httpd 서비스를 구성하는 방법 입니다.
+$ sudo yum install httpd
+$ mv /path/to/repos /var/www/html/
+$ chmod -R +r /var/www/html/repos
+$ restorecon -vR /var/www/html
 
 ~~~
 
 
-# 2. 설정 파일 작성
+# 2. 설정 파일 작성 및 VM 생성
 
 ### 1) sshkey 생성
 
 ~~~
 $ ssh-keygen -t rsa -b 2048 -N "" -f /root/.ssh/id_rsa
-
 $ eval "$(ssh-agent -s)"
-
 $ ssh-add /root/.ssh/id_rsa
-
 
 ~~~
 
 ### 2) install-config.yaml 파일 작성
 
 이 파일이 작성되어야 RHCOS ignition파일이 생성할 수 있습니다.
-
 pullSecret 에는 docker registry login 패스워드를 입력합니다.
-
-jq -c . ~/new-pull-secret.txt
+jq -c . ~/new-pull-secret
+{"auths":{"register.sparkproda.makecloud.me:5000":{"auth":"c3Bhcmtwcm9kYTpzcGFya3Byb2Rh"}
 
 additionalTrustBundle 에는 docker registry 인증서를 입력합니다.
-
 cat /opt/registry/certs/domain.crt
 
 sshkey를 입력합니다.
 
+Vcenter를 이용하여  Ansible 기반 설치를 위한 방법도 있습니다.
+~~~~
+export DOMAIN=ose4.com
+export CLUSTERID=zcplocal
+export VCENTER_SERVER=192.168.11.111
+export VCENTER_USER="user"
+export VCENTER_PASS='Password'
+export VCENTER_DC=dcname
+export VCENTER_DS=datastore1-OS
+export PULL_SECRET=$(cat ~/.openshift/pull-secret.json)
+export OCP_SSH_KEY=$(cat ~/.ssh/id_rsa.pub)
 ~~~
 
+~~~
+$ cat /etc/pki/ca-trust/source/anchors/domain.crt      
 $ mkdir /root/openshift4
-
 $ cat <<EOF >> /root/openshift4/install-config.yaml
 
 apiVersion: v1
@@ -136,6 +160,37 @@ imageContentSources:
   - ose4-bastion:5000/sparkproda
   source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
 EOF  
+
+[chernand@laptop openshift4]$ cat <<EOF < install-config.yaml
+apiVersion: v1
+baseDomain: ${DOMAIN}
+compute:
+- hyperthreading: Enabled
+  name: worker
+  replicas: 0
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: 3
+metadata:
+  name: ${CLUSTERID}
+networking:
+  clusterNetworks:
+  - cidr: 10.254.0.0/16
+    hostPrefix: 24
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  vsphere:
+    vcenter: ${VCENTER_SERVER}
+    username: ${VCENTER_USER}
+    password: ${VCENTER_PASS}
+    datacenter: ${VCENTER_DC}
+    defaultDatastore: ${VCENTER_DS}
+pullSecret: '${PULL_SECRET}'
+sshKey: '${OCP_SSH_KEY}'
+EOF
 ~~~
 
 
@@ -145,36 +200,79 @@ EOF
 
 ~~~
 # openshift-install create ignition-configs --dir=/root/openshift4
-INFO Consuming "Install Config" from target directory
-WARNING Making control-plane schedulable by setting MastersSchedulable to true for Scheduler cluster settings
+openshift-install create ignition-configs --dir=/home/vagrant/openshift4
 
-# ls
-auth  bootstrap.ign  install-config.yaml.backup  master.ign  metadata.json  worker.ign
+$ base64 -w0 <installation_directory>/master.ign > <installation_directory>/master.64
+$ base64 -w0 <installation_directory>/worker.ign > <installation_directory>/worker.64
+$ base64 -w0 <installation_directory>/append-bootstrap.ign > <installation_directory>/append-bootstrap.64
 
 cp *.ign /usr/share/nginx/ocp/rhcos/ignitions/
-
 ~~~
 
 기본 Ignition 파일에서 RHCOS VM static IP를 사용하기 위해서는 Ignition 파일을 수정해야 합니다.
 
-
-
-
-
 ### 04) virtualbox에서 ISO 파일을 사용하여 RHCOS VM 만들기
 
 virtualbox ethernet 인터페이스는 enp0s3, enp0s8이 있습니다. dev은 sda 입니다.
-
-
 RHCOS 부팅 중에 image URL 경로 및 Iginition URL경로를 지정할 수 있습니다.
 
 ~~~
+curl -o ./utils/filetranspile https://raw.githubusercontent.com/ashcrow/filetranspiler/master/filetranspile
 
-ip=192.168.1.116::192.168.1.1:255.255.255.0:bootstrap.openshift4.example.com:ens192:none
-nameserver=192.168.1.2
-coreos.inst.install_dev=sda
+chmod +x ./utils/filetranspile
+Download the python-yaml package on your RHEL server. This package is required due to the filetranspiler dependencies.
+
+yum install python3
+pip3 install pyyaml
+
+mkdir -p bootstrap/etc/sysconfig/network-scripts/
+
+# vi bootstrap/etc/sysconfig/network-scripts/ifcfg-enp2s0f0
+
+NAME=enp2s0f0
+DEVICE=enp2s0f0
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
+IPADDR=10.178.211.94
+NETMASK=255.255.255.128
+GATEWAY=10.178.211.1
+DOMAIN=makecloud.me
+DNS1=10.178.211.19
+PREFIX=25
+PEERDNS=no
+DEFROUTE=yes
+IPV6INIT=no
+
+./filetranspile -i bootstrap.ign -f bootstrap -o bootstrap-static.ign
 
 
+### 부팅 중 에러 발생 시 재설정 명령
 /usr/libexec/coreos-installer -b http://{이미지경로}   -i http://{ignition 파일 경로}
 
+## selinux가 설정된 경우 추가 설정
+
+# setsebool -P httpd_read_user_content 1
+# setsebool -P haproxy_connect_any 1
+
+### 인코딩
+$ for i in append-bootstrap master worker
+do
+base64 -w0 < $i.ign > $i.64
+done
+
+[chernand@laptop openshift4]$ ls -1 *.64
+append-bootstrap.64
+master.64
+worker.64
+
+## openssl를 사용하여 인코딩
+
+openssl base64 -A -in append-bootstrap.ign -out append-bootstrap.64
+
 ~~~
+
+# 3. Haproxy 설치
+
+
+# 4. DNS 설치

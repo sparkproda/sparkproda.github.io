@@ -17,7 +17,6 @@ categories: openshift 4.2 install container platform mirror redhat podman
 skip 합니다.
 도커 레지스트리와 관련된 디렉토리를 생성합니다.
 
-
 ### 1) 설치 디텍토리 생성
 ~~~
 
@@ -33,20 +32,36 @@ skip 합니다.
 
 # cd /opt/registry/certs
 
-# openssl req -newkey rsa:4096 -nodes -sha256 -keyout domain.key -x509 -days 365 -out domain.crt
+# openssl req -newkey rsa:4096 -nodes -sha256 -keyout domain.key -x509 -days 365 -out domain.crt -subj '/C=KR/ST=Seoul/L=Seoul/O=makecloud.me/CN=register.sparkproda.makecloud.me'
+
+
 
 # yum install -y  httpd-tools
+# apt-get install apache2-utils
 
-# htpasswd -bBc /opt/registry/auth/htpasswd sparkproda sp*****oda
+# htpasswd -bBc /opt/registry/auth/htpasswd sparkproda sparkproda
 
-[root@ose4-bastion certs]# cat /opt/registry/auth/htpasswd
-sparkproda:$2y$05$ZZKvkzRPqPIV3CyCF*****IVO6N.HoxdabHWwAcCyCOadfJMK4kmm
+https://docs.docker.com/ee/dtr/user/access-dtr/
 
 
 # cp /opt/registry/certs/domain.crt /etc/pki/ca-trust/source/anchors/
 # update-ca-trust
 
 
+# Download the DTR CA certificate
+sudo curl -k https://<dtr-domain-name>/ca -o /etc/pki/ca-trust/source/anchors/<dtr-domain-name>.crt
+# Refresh the list of certificates to trust
+sudo update-ca-trust
+# Restart the Docker daemon
+sudo /bin/systemctl restart docker.service
+
+## Podman 설치
+sudo apt update
+sudo apt -y  install software-properties-common
+sudo add-apt-repository -y ppa:projectatomic/ppa
+
+sudo apt update
+sudo apt -y install podman
 
 ~~~
 
@@ -54,6 +69,8 @@ sparkproda:$2y$05$ZZKvkzRPqPIV3CyCF*****IVO6N.HoxdabHWwAcCyCOadfJMK4kmm
 ### 3) 도커 이미지를 통해서 docker private registry 구성
 
 아래에서는 docker or podman을 사용하여 docker private registry를 구성하는 방법입니다.
+
+https://docs.openshift.com/container-platform/4.2/installing/install_config/installing-restricted-networks-preparations.html#installing-restricted-networks-preparations
 
 ~~~
 
@@ -87,7 +104,10 @@ docker run 상태 확인하시고 접속 테스트를 진행 해 봅니다.
 
 ~~~
 
-# curl -u sparkproda:sparkproda  -k https://ose4-bastion:5000/v2/_catalog
+# curl -u sparkproda:sparkproda  -k https://register.sparkproda.makecloud.me:5000/v2/_catalog
+
+
+curl -u sparkproda:sparkproda  -k https://register.sparkproda.makecloud.me:5000/v2/spark/tags/list
 
 [root@ose4-bastion certs]# curl -u sparkproda:sparkproda  -k https://ose4-bastion:5000/v2/_catalog
 {"repositories":[]}
@@ -101,7 +121,7 @@ docker run 상태 확인하시고 접속 테스트를 진행 해 봅니다.
 
 
 ~~~
-[root@ose4-bastion certs]# docker login ose4-bastion:5000
+[root@ose4-bastion certs]# docker login register.sparkproda.makecloud.me:5000
 Username: sparkproda
 Password:
 Login Succeeded
@@ -121,7 +141,6 @@ c3Bhcmtwcm9kYTpzcGFya3Byb2Rh
 
 [root@ose4-bastion certs]# cp ~/.docker/config.json ~/pullsecret_config.json
 
-
 ~~~
 
 ### 5) json 파일 처리
@@ -137,6 +156,8 @@ json 파일 처리를 위한 라이브러리를 설치합니다.
 ### 6) secret 파일 다운로드 후 docker login auth파일 추가
 
 https://cloud.redhat.com/openshift/install/metal/user-provisioned 사이트에서
+
+https://cloud.redhat.com/openshift/install/pull-secret
 
 pull secret를 다운로드 받습니다. 그리고 아래와 같이 docker login auth 파일을 추가합니다.
 
@@ -161,15 +182,19 @@ pull-secret.txt  pullsecret_config.json
 
 ### 7) oc, kubectl 설치
 
-여기 사이트에서 설치 관련 리소스를 다운로드 받습니다.
+여기 사이트에서 설치 관련 리소스를 다운로드 받습니다. 그리고 경로를 설정합니다.
+
 https://access.redhat.com/downloads/content/290/
-
-
 
 
 ### 8) Mirror docker repository 구성
 
 ~~~
+
+sudo sysctl -w net.ipv4.ip_forward=1
+echo net.ipv4.ip_forward=1 | sudo tee -a /etc/sysctl.conf
+
+
 $ export OCP_RELEASE=<release_version>
 $ export LOCAL_REGISTRY='<local_registry_host_name>:<local_registry_host_port>'
 $ export LOCAL_REPOSITORY='<repository_name>'
@@ -177,6 +202,7 @@ $ export PRODUCT_REPO='openshift-release-dev'
 $ export LOCAL_SECRET_JSON='<path_to_pull_secret>'
 $ export RELEASE_NAME="ocp-release"
 
+## example
 
 $ export OCP_RELEASE=4.2.14-x86_64
 $ export LOCAL_REGISTRY=ose4-bastion:5000
@@ -192,18 +218,6 @@ $ oc adm -a ${LOCAL_SECRET_JSON} release mirror \
      --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}
 
 
-
-
-     imageContentSources:
-     - mirrors:
-       - ose4-bastion:5000/sparkproda
-       source: quay.io/openshift-release-dev/ocp-release
-     - mirrors:
-       - ose4-bastion:5000/sparkproda
-       source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
-
-
-$ cat /etc/pki/ca-trust/source/anchors/domain.crt        
 ~~~
 미러링이 완료되면 아래와 같습니다.
 
@@ -223,22 +237,6 @@ imageContentSources:
   source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
 
 
-To use the new mirrored repository for upgrades, use the following to create an ImageContentSourcePolicy:
-
-apiVersion: operator.openshift.io/v1alpha1
-kind: ImageContentSourcePolicy
-metadata:
-  name: example
-spec:
-  repositoryDigestMirrors:
-  - mirrors:
-    - ose4-bastion:5000/sparkproda
-    source: quay.io/openshift-release-dev/ocp-release
-  - mirrors:
-    - ose4-bastion:5000/sparkproda
-    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
-[root@ose4-bastion ~]#
-
 ~~~
 
 위 결과 메세지에서 imageContentSource 섹션 부분은 추후 설치 시 필요한 부분이므로 기록해 두어야 합니다.
@@ -250,6 +248,7 @@ imageContentSources:
 - mirrors:
   - ose4-bastion:5000/sparkproda
   source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+
 ~~~
 
 ### 9) command line interface를 설치 합니다.
@@ -264,14 +263,11 @@ openshift-install 파일은 아래와 같이 해서 얻을 수 있습니다.
 ~~~
 oc adm release extract --command=openshift-install "${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}" -a ${LOCAL_SECRET_JSON}
 
-[root@ose4-bastion ~]# ./openshift-install version
+[root@ose4-bastion ~]# openshift-install version
 ./openshift-install v4.2.14
 
 
 # tar zxvf openshift-client-linux-4.2.13.tar.gz
-README.md
-oc
-kubectl
 
 # mv oc /usr/local/bin/
 # mv kubectl /usr/local/bin/
