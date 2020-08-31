@@ -35,7 +35,6 @@ skip 합니다.
 # openssl req -newkey rsa:4096 -nodes -sha256 -keyout domain.key -x509 -days 365 -out domain.crt -subj '/C=KR/ST=Seoul/L=Seoul/O=makecloud.me/CN=register.sparkproda.makecloud.me'
 
 
-
 # yum install -y  httpd-tools
 # apt-get install apache2-utils
 
@@ -112,6 +111,9 @@ curl -u sparkproda:sparkproda  -k https://register.sparkproda.makecloud.me:5000/
 [root@ose4-bastion certs]# curl -u sparkproda:sparkproda  -k https://ose4-bastion:5000/v2/_catalog
 {"repositories":[]}
 
+curl -u sparkproda:sparkproda  -k https://register.zcplocal.ose4.com:5000/v2/_catalog
+
+
 ~~~
 
 ### 4) docker login에 필요한 파일 준비
@@ -131,13 +133,13 @@ Login Succeeded
 {
 	"auths": {
 		"ose4-bastion:5000": {
-			"auth": "c3Bhcmtwcm9kYTpzcGFya3Byb2Rh"
+			"auth": "c3Bhcmtwcm3Byb2Rh"
 		}
 	}
 }[root@ose4-bastion certs]#
 
 [root@ose4-bastion certs]# echo -n 'sparkproda:sparkproda' | base64 -w0
-c3Bhcmtwcm9kYTpzcGFya3Byb2Rh
+c3Bhcmtwcm9ya3Byb2Rh
 
 [root@ose4-bastion certs]# cp ~/.docker/config.json ~/pullsecret_config.json
 
@@ -172,7 +174,7 @@ pull-secret.txt  pullsecret_config.json
 {
   "auths": {
     "ose4-bastion:5000": {
-      "auth": "c3Bhcmtwcm9kYTpzcGFya3Byb2Rh"
+      "auth": "c3BhcmtwcFya3Byb2Rh"
     },
     "cloud.openshift.com": {
       "auth": "b3BlbnNoaW~~~~~~~
@@ -217,6 +219,12 @@ $ oc adm -a ${LOCAL_SECRET_JSON} release mirror \
      --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} \
      --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${OCP_RELEASE}
 
+export OCP_RELEASE=4.3.0-x86_64
+export LOCAL_REGISTRY=register.zcplocal.ose4.com:5000
+export LOCAL_REPOSITORY='ocp4/openshift4'
+export PRODUCT_REPO='openshift-release-dev'
+export LOCAL_SECRET_JSON='/root/.openshift/new-pull-secret.txt'
+export RELEASE_NAME="ocp-release"
 
 ~~~
 미러링이 완료되면 아래와 같습니다.
