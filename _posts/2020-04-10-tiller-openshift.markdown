@@ -5,10 +5,12 @@ date:   2020-04-10
 categories:  helm tiller openshift install
 ---
 
+# Helm tiller install On openshift
+
 Helm tiller를 오픈쉬프트4에 설치합니다.
 
 
-1. Helm을 다운로드 받습니다.
+## 1. Helm을 다운로드 받습니다.
 ~~~
 mkdir -p /tiller
 
@@ -18,7 +20,7 @@ cp linux-amd64/helm /usr/bin/
 
 ~~~
 
-2. tiller를 설치합니다.
+## 2. tiller를 설치합니다.
 
 ~~~
 $ oc new-project tiller
@@ -45,7 +47,7 @@ $ oc policy add-role-to-user edit \
 
 ~~~
 
-3. Helm repo update
+## 3. Helm repo update
 
 ~~~
 kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=tiller:tiller
@@ -55,7 +57,7 @@ helm repo update
 ~~~
 
 
-4. Helm install test
+## 4. Helm install test
 
 ~~~
 oc new-project newapp
