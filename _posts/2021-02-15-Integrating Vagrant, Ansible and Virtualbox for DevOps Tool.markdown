@@ -9,7 +9,7 @@ Vagrant를 사용하여 Virtualbox를 생성하고, Vagrant에서 ansible를 실
 # Integrating Vagrant, Ansible and Virtualbox for DevOps Tool
 
 
-![Devops_tool](../assets/Install_flow_of_Devops_tool.png)
+![Devops_tool](./assets/Install_flow_of_Devops_tool.png)
 
 ##  사전 설치 준비 사항
 
