@@ -4,6 +4,7 @@ title:  "Integrating Vagrant, Ansible and Virtualbox for DevOps Tool "
 date:   2021-02-15
 categories:  vagrant ansible virtualbox devops CI/CD
 ---
+Vagrant를 사용하여 Virtualbox를 생성하고, Vagrant에서 ansible를 실행하여 여러가지 Devops tool을  Docker 기반으로 구성합니다.
 
 # Integrating Vagrant, Ansible and Virtualbox for DevOps Tool
 

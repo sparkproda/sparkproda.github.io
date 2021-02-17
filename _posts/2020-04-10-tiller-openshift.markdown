@@ -4,6 +4,8 @@ title:  "Helm tiller install  On openshift  "
 date:   2020-04-10
 categories:  helm tiller openshift install
 ---
+Helm tiller를 오픈쉬프트4에 설치합니다.
+
 
 # Helm tiller install On openshift
 
