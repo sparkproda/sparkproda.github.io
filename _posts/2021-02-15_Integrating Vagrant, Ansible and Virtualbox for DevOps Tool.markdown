@@ -1,4 +1,12 @@
+---
+layout: post
+title:  "Integrating Vagrant, Ansible and Virtualbox for DevOps Tool "
+date:   2021-02-15
+categories:  vagrant ansible virtualbox devops CI/CD
+---
+
 # Integrating Vagrant, Ansible and Virtualbox for DevOps Tool
+
 
 ![Devops_tool](../assets/Install_flow_of_Devops_tool.png)
 
