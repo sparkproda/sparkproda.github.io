@@ -348,3 +348,8 @@ end
  ## 03. Vagrant, Ansible를 사용하여 Kubernetes 구성
 
 Code를 Download 한 후 vagrant up를 실행시키면 kubeadm을 통해서 kubernetes cluster가 구성됩니다.
+
+
+## 소스 코드
+
+관련 코드: https://github.com/sparkproda/kubeadm-vagrant.git
