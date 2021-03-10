@@ -5,8 +5,6 @@ date:   2021-03-10
 categories:  aws ami packer jenkins
 ---
 
-# Automated AWS AMI builds for Jenkins agents with Packer
-
 AMI 이미지는 전체 EC2 인스턴스의 백업입니다. EBS 스냅 샷은 AMI 이미지가 생성 될 때 EC2 인스턴스에 연결된 개별 EBS 볼륨을 백업합니다. 그러므로 Packer를 통해서 AMI 생성시 EBS 스냅샷도 같이 생성됩니다.
 Pakcer에서 빌드 타입이 amazon-ebs인경우, AMI생성시 소스 AMI에서 EC2 인스턴스를 프로비저닝 한 다음 해당 머신에서 추가적인 패키지를 Scripts와 Ansible Playbook를 통해서 설치 진행하고 AMI를 생성합니다. 완료되면 EC2 인스턴스는 종료됩니다.
 
