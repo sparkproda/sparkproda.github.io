@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Using Vagrant and Ansible to Create a Kubernetes Cluster(Util Kubeadm)"
+title:  "Using Vagrant and Ansible to Create a Kubernetes Cluster(Using Kubeadm)"
 date:   2021-03-07
 categories:  kubeadm kubernetes vagrant ansible
 ---
