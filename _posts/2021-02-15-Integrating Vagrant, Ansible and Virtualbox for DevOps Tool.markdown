@@ -177,6 +177,7 @@ USER jenkins
     name: jenkins_docker
     image: jenkins_docker:v1
     state: started
+    user: root
     restart_policy: always
     networks:
     - name: devops_network    
