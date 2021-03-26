@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "KEYCLOAK, SAML을 이용한 AWS SSO 연결(How to set up SSO for Amazon AWS using Keycloak)"
+title:  "KEYCLOAK, SAML을 이용한 AWS SSO 연결(How to set up SSO for AWS using Keycloak)"
 date:   2021-03-24
 categories:  AWS IAM SSO Keycloak SAML
 ---
@@ -108,35 +108,40 @@ Keycloak Role 정보는 아래 패턴으로 추가합니다.
 3가지 Mapper를 추가 합니다.
 
 2-1) Session Role
+
+~~~
 - Name：　Session Role
 - Mapper Type：　Role list
 - Role attribute name：　https://aws.amazon.com/SAML/Attributes/Role
 - Friendly Name：　Session Role
 - SAML Attribute Name Format：　Basic
 - Single Role Attribute：　ON (필수)
+~~~
 
 ![07.Role](/assets/07.Role.png)
 
 2-2) Session Name
+~~~
 - Name：　Session Name
 - Mapper Type：　User Property
 - Property：　username
 - Friendly Name：　Session Name
 - SAML Attribute Name：　https://aws.amazon.com/SAML/Attributes/RoleSessionName
 - SAML Attribute Name Format：　Basic
+~~~
 
 ![08.Session](/assets/08.Session.png)
 
 
 2-3) ession Duration
-
+~~~
 - Name：　Session Duration
 - Mapper Type：　Hardcoded attribute
 - Friendly Name：　Session Duration
 - SAML Attribute Name：　https://aws.amazon.com/SAML/Attributes/SessionDuration
 - SAML Attribute Name Format：　Basic
 - Attribute value：　9000
-
+~~~
 
 #### 3) 기본 설정 부분 제거
 
