@@ -83,7 +83,7 @@ wget https://[Keycloak URL]/auth/realms/DevOps/protocol/saml/descriptor --no-che
 
 Role을 생성하여 권한을 부여 합니다.
 
-![5-1.Role생성](/assets/5-1.Role생성.png)
+![5-1.Role생성](/assets/5_1_Role생성.png)
 
 
 
