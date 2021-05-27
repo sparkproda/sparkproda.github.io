@@ -4,7 +4,7 @@ title:  "Open Distro Elasticsearch + Fluentd + Kibana (EFK) with Docker CONSISTI
 date:   2021-05-27
 categories:  Open Distro Elasticsearch, Fluentd, Kibana, docker, ansible
 ---
-Docker 기반으로 #Open Distro Elasticsearch, #Fluentd, #Kibana (EFK)를 Dockder Swarm 설치 없이 구성했으며, 이중화를 고려해서 3개의 host에 구성했습니다.
+Docker 기반으로 #Open Distro Elasticsearch, #Fluentd, #Kibana (EFK)를 Docker Swarm 설치 없이 구성했으며, 이중화를 고려해서 3개의 host에 구성했습니다.
 
 그리고 kibana 인증 연동을 Keycloak과 #OpenID 로 연결하여, Keycloak를 통해서 인증 및 Role mapping이 되게 구성했습니다.keycloak OpenID 연동 설정 내용은 추후 다시 올리도록 하겠습니다.
 
