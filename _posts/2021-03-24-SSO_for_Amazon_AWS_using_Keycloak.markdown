@@ -5,8 +5,6 @@ date:   2021-03-24
 categories:  AWS IAM SSO Keycloak SAML
 ---
 
-# KEYCLOAK, SAML을 이용한 AWS SSO 연결(How to set up SSO for AWS using Keycloak)"
-
 SSO를 위해서 Keycloak(SAML)를 사용했으며, Keycloak 사용자가  AWS Role에 따라서 권한이 제어되는 부분을 소개합니다.
 여기에서는 Keycloak SAML를 통한 연결을 설명드립니다. 아래 연결 경로상 1번 연결에 대한 설정 사항입니다.
 
