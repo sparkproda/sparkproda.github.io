@@ -1,6 +1,6 @@
 title: Devops engineer's home
 author: GitHub User
-email: besteffort@naver.com
+email: sparkproda@gmail.com
 description: > # this means to ignore newlines until "show_exerpts:"
   Write an awesome description for your new site here. You can edit this
   line in _config.yml. It will appear in your document head meta (for
@@ -16,6 +16,7 @@ plainwhite:
   tagline: Devops engineer
   date_format: "%b %-d, %Y"
   sitemap: true # set to true to generate sitemap.xml content
+  search: true # set to true to enable searchbar
 
   # generate social links in footer
   social_links:
