@@ -9,7 +9,7 @@ NGINX Ingress Controller를 사용해도 부하분산 및 이중화를 위해서
 여기에서는 외부 로드발런서 ALB, NLB 구성하여 EKS 내부의 Nginx ingress와 연동하는 부분을 설명 드리겠습니다.
 
 
-![NginxIngress](../assets/Using-ALB-NLB-with-NginxingressController-EKS.png)
+![NginxIngress](/assets/Using-ALB-NLB-with-NginxingressController-EKS.png)
 
 ## 1. Nginx ingress controller 구성
 먼저, Nginx ingress Controller를 Helm으로 설치 진행하도록 합니다.
@@ -100,7 +100,7 @@ sparkproda-nginx-ingress-nginx-controller-5d667bfccb-x2kdk   1/1     Running   0
 
 ~~~
 
-![alb_healthcheck_node1](../assets/alb_healthcheck_node1.png)
+![alb_healthcheck_node1](/assets/alb_healthcheck_node1.png)
 
 #### Health check 상태확인: nginx controller pod가 3개일 때
 
@@ -114,7 +114,7 @@ sparkproda-nginx-ingress-nginx-controller-5d667bfccb-k9gf4   1/1     Running   0
 sparkproda-nginx-ingress-nginx-controller-5d667bfccb-wjrzp   1/1     Running   0          68m
 ~~~
 
-![alb_healthcheck_node3](../assets/alb_healthcheck_node3.png)
+![alb_healthcheck_node3](/assets/alb_healthcheck_node3.png)
 
 #### 2) ALB를 Nginx ingress와 연결
 
@@ -184,7 +184,7 @@ nlb-service                                        LoadBalancer   10.100.234.79 
 
 
 ~~~
-![nlb-healthcheck](../assets/nlb-healthcheck.png)
+![nlb-healthcheck](/assets/nlb-healthcheck.png)
 
 #### 2) NLB를 Nginx ingress와 연결
 
